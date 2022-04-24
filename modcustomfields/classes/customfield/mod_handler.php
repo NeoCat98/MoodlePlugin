@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - https://moodle.org/
+// This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,23 +12,30 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin strings are defined here.
+ * Course handler for custom fields
  *
- * @package     local_googlecalendar
- * @copyright   2022 Javier Mejia
+ * @package     local_modcustomfields
+ * @copyright   2020 Daniel Neis Araujo <daniel@adapta.online>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_googlecalendar\customfield;
+namespace local_modcustomfields\customfield;
 
 defined('MOODLE_INTERNAL') || die;
 
 use core_customfield\api;
 use core_customfield\field_controller;
 
+/**
+ * Course handler for custom fields
+ *
+ * @package     local_modcustomfields
+ * @copyright   2020 Daniel Neis Araujo <daniel@adapta.online>
+ * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mod_handler extends \core_customfield\handler {
 
     /**
@@ -78,7 +85,7 @@ class mod_handler extends \core_customfield\handler {
      * @return bool true if the current can configure custom fields, false otherwise
      */
     public function can_configure() : bool {
-        return has_capability('moodle/course:configurecustomfields', $this->a());
+        return has_capability('moodle/course:configurecustomfields', $this->get_configuration_context());
     }
 
     /**
@@ -149,7 +156,7 @@ class mod_handler extends \core_customfield\handler {
      *
      * @return \context the context for configuration
      */
-    public function a() : \context {
+    public function get_configuration_context() : \context {
         return \context_system::instance();
     }
 
@@ -182,7 +189,6 @@ class mod_handler extends \core_customfield\handler {
      * @param \MoodleQuickForm $mform
      */
     public function config_form_definition(\MoodleQuickForm $mform) {
-
         $mform->addElement('header', 'mod_handler_header', get_string('customfieldsettings', 'core_course'));
         $mform->setExpanded('mod_handler_header', true);
 
@@ -239,7 +245,7 @@ class mod_handler extends \core_customfield\handler {
         require_once($CFG->libdir.'/adminlib.php');
 
         $title = parent::setup_edit_page($field);
-        admin_externalpage_setup('local_googlecalendar');
+        admin_externalpage_setup('local_modcustomfields');
         $PAGE->navbar->add($title);
         return $title;
     }
