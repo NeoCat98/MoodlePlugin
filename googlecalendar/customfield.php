@@ -25,14 +25,12 @@
 global $CFG;
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
-
-admin_externalpage_setup('local_googlecalendar');
-
+global $COURSE;
 $output = $PAGE->get_renderer('core_customfield');
-$handler = local_googlecalendar\customfield\mod_handler::create();
-$outputpage = new \core_customfield\output\management($handler);
+
+$context = context_course::instance($COURSE->id);
 
 echo $output->header(),
-     $output->heading(new lang_string('pluginname', 'local_googlecalendar')),
-     $output->render($outputpage),
+     $output->heading(get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0)[4]->email),
      $output->footer();
+echo 'Hola';

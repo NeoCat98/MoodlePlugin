@@ -22,6 +22,7 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -34,48 +35,29 @@ defined('MOODLE_INTERNAL') || die();
  * (the mod is assumed for course activities)
  */
 function local_googlecalendar_coursemodule_standard_elements($formwrapper, $mform) {
-
+    GLOBAL $DB;
+    $moduleid = $formwrapper->get_current()->coursemodule;
+    $courseid = $formwrapper->get_current()->course;
     $modulename = $formwrapper->get_current()->modulename;
     
-
+    $user = $DB->get_record_sql('SELECT checkbox FROM {googlecalendar} WHERE course = ? AND assign = ?;',[$courseid,$moduleid]);
+    
     if ($modulename == 'assign') {
-        $handler = local_googlecalendar\customfield\mod_handler::create();
-        $handler->set_parent_context($formwrapper->get_context()); // For course handler only.
-        $cm = $formwrapper->get_coursemodule();
-        if (empty($cm)) {
-            $cmid = 0;
-        } else {
-            $cmid = $cm->id;
+        $elementname1 = 'checkboxGoogleCalendar';
+        $mform->addElement('header', 'exampleheader', get_string('message1', 'local_googlecalendar'));
+        $mform->addElement('advcheckbox', $elementname1, get_string('message1', 'local_googlecalendar'));
+        $mform->setType($elementname1, PARAM_BOOL);
+        if(empty($user)){
+            $mform->setdefault($elementname1, ['checkbydefault']);
         }
-        $handler->instance_form_definition($mform, $cmid);
-        // Prepare custom fields data.
-        $data = $formwrapper->get_current();
-        $oldid = $data->id;
-        $data->id = $cmid;
-        $handler->instance_form_before_set_data($data);
-        $data->id = $oldid;
-    }
+        else{
+            if($user->checkbox == 1){
+                $mform->setdefault($elementname1, 1);
+            }
+        }
 
-    /**
-    *
-    *$elementname1 = 'checkboxGoogle';
-    *    $elementname2 = 'fromdate';
-    *    $elementname3 = 'todate';
-    *
-    *    
-    *    $mform->addElement('header', 'exampleheader', get_string('message1', 'local_googlecalendar'));
-    *    $mform->addElement('advcheckbox', $elementname1, get_string('message1', 'local_googlecalendar'));
-    *    $mform->setType($elementname1, PARAM_BOOL);
-    *    $mform->setdefault($elementname2, time());
-*
- *       $mform->addElement('date_time_selector', $elementname2, get_string('message2', 'local_googlecalendar'));
-  *      $mform->setType($elementname2, PARAM_INT);
-   *     $mform->setdefault($elementname2, time());
-*
- *       $mform->addElement('date_time_selector', $elementname3, get_string('message3', 'local_googlecalendar'));
-  *      $mform->setType($elementname3, PARAM_INT);
-   *     $mform->setdefault($elementname3, time());
-         */
+    }
+    
 }
 
 /**
@@ -83,21 +65,36 @@ function local_googlecalendar_coursemodule_standard_elements($formwrapper, $mfor
  *
  * @param stdClass $data
  * @param stdClass $course
- * @return void
- * See plugin_extend_coursemodule_edit_post_actions in
- * https://github.com/moodle/moodle/blob/master/course/modlib.php
+ * @return $data
  */
 function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
-    // Pull apart $data and insert/update the database table.
-    $handler = local_googlecalendar\customfield\mod_handler::create();
-    $handler->set_parent_context(context_course::instance($course->id));
-    $data->id = $data->coursemodule;
-    $handler->instance_form_save($data, true);
-    return $data;
-
-
+    GLOBAL $DB;
     
+    $newobj = new stdClass();
+    $newobj->course = $data->course;
+    $newobj->assign = $data->coursemodule;
+    $user = $DB->get_record_sql('SELECT id FROM {googlecalendar} WHERE course = ? AND assign = ?;',[$data->course,$data->coursemodule]);
+    $newobj->checkbox = $data->checkboxGoogleCalendar;
+    $context = context_course::instance($data->course);
+    if(empty($user)){  
+        $DB->insert_record('googlecalendar',$newobj);
+    }
+    else{
+        $newobj->id = $user->id;
+        $DB->update_record('googlecalendar', $newobj);
+    }
+
+    if($data->checkboxGoogleCalendar == 1){
+        //realizar la API
+        $submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
+        foreach ($submissioncandidates as $d){
+            $email = $d->email;
+            //mandar sesion de la api
+        }
+    }
+    return $data;
 }
+
 
 /**
  * Validate the data in the new field when the form is submitted
@@ -107,7 +104,7 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
  * @return void
  */
 function local_googlecalendar_coursemodule_validation($fromform, $fields) {
-    $handler = local_modcustomfields\customfield\mod_handler::create();
-    $handler->set_parent_context(context_course::instance($fields['course']));
-    return $handler->instance_form_validation($fields, []);
+    if (get_class($fromform) == 'mod_assign_mod_form') {
+        \core\notification::add($fields['examplefield'], \core\notification::INFO);
+    }
 }

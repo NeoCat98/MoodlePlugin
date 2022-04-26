@@ -78,7 +78,7 @@ class mod_handler extends \core_customfield\handler {
      * @return bool true if the current can configure custom fields, false otherwise
      */
     public function can_configure() : bool {
-        return has_capability('moodle/course:configurecustomfields', $this->a());
+        return has_capability('moodle/course:configurecustomfields', $this->get_configuration_context());
     }
 
     /**
@@ -149,7 +149,7 @@ class mod_handler extends \core_customfield\handler {
      *
      * @return \context the context for configuration
      */
-    public function a() : \context {
+    public function get_configuration_context() : \context {
         return \context_system::instance();
     }
 
@@ -182,7 +182,6 @@ class mod_handler extends \core_customfield\handler {
      * @param \MoodleQuickForm $mform
      */
     public function config_form_definition(\MoodleQuickForm $mform) {
-
         $mform->addElement('header', 'mod_handler_header', get_string('customfieldsettings', 'core_course'));
         $mform->setExpanded('mod_handler_header', true);
 
@@ -213,7 +212,9 @@ class mod_handler extends \core_customfield\handler {
         $target = $task->get_target();
         $override = ($target != \backup::TARGET_CURRENT_ADDING && $target != \backup::TARGET_EXISTING_ADDING);
 
+       
         foreach ($records as $d) {
+            echo "<script>console.log('Debug Objects: " . $records . "' );</script>";
             $field = $d->get_field();
             if ($field->get('shortname') === $data['shortname'] && $field->get('type') === $data['type']) {
                 if (!$d->get('id') || $override) {
@@ -239,7 +240,7 @@ class mod_handler extends \core_customfield\handler {
         require_once($CFG->libdir.'/adminlib.php');
 
         $title = parent::setup_edit_page($field);
-        admin_externalpage_setup('local_googlecalendar');
+        admin_externalpage_setup('local_modcustomfields');
         $PAGE->navbar->add($title);
         return $title;
     }

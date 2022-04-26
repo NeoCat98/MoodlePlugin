@@ -24,5 +24,5 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_googlecalendar';
-$plugin->version = 2022021700;
+$plugin->version = 2022042500;
 $plugin->requires = 2019052000; // Requires Moodle 3.7.
