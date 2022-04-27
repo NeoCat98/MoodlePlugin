@@ -21,8 +21,11 @@
  * @copyright   2022 Javier Mejia
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_googlecalendar';
-$plugin->version = 2022042501;
-$plugin->requires = 2019052000; // Requires Moodle 3.7.
+$string['pluginname'] = 'Google Calendar';
+$string['disabled'] = 'disabled plugin';
+$string['message1'] = 'Send reminder to Google Calendar';
+$string['message2'] = 'Start Date';
+$string['message3'] = 'End Date';

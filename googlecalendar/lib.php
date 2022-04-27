@@ -25,6 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+
+
+
 /**
  * @param moodleform $formwrapper The moodle quickforms wrapper object.
  * @param MoodleQuickForm $mform The actual form object (required to modify the form).
@@ -76,6 +79,17 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
     $user = $DB->get_record_sql('SELECT id FROM {googlecalendar} WHERE course = ? AND assign = ?;',[$data->course,$data->coursemodule]);
     $newobj->checkbox = $data->checkboxGoogleCalendar;
     $context = context_course::instance($data->course);
+    
+    $datestart = new stdClass();
+    $datestart->dateTime = date('d/m/Y h:i:s',strtotime($data->allowsubmissionsfromdate['day'] .'/'. $data->allowsubmissionsfromdate['month'] .'/'. $data->allowsubmissionsfromdate['year'] .' '. $data->allowsubmissionsfromdate['hour'] . ':'.$data->allowsubmissionsfromdate['minute'] . ':00'));
+    $datestartCheck = $data->allowsubmissionsfromdate['enabled'];
+
+
+    $dateend = new stdClass();
+    $dateend->dateTime = date('d/m/Y h:i:s',strtotime($data->duedate['day'] .'/'. $data->duedate['month'] .'/'. $data->duedate['year'] .' '. $data->duedate['hour'] . ':'.$data->duedate['minute'] . ':00'));
+    $dateendCheck = $data->duedate['enabled'];
+    
+    $dateend = new stdClass();
     if(empty($user)){  
         $DB->insert_record('googlecalendar',$newobj);
     }
@@ -87,10 +101,30 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
     if($data->checkboxGoogleCalendar == 1){
         //realizar la API
         $submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
+        $attendees = [];
         foreach ($submissioncandidates as $d){
-            $email = $d->email;
-            //mandar sesion de la api
+            $email = new stdClass();
+            $email->email = $d->email;
+            array_push($attendees,$email);
         }
+
+        // Get an issuer from the id.
+        $issuer = \core\oauth2\api::get_issuer(1);
+        // Get an OAuth client from the issuer.
+        $href = new moodle_url('/admin/oauth2callback.php', ['id' => $data->coursemodule]);
+        $scopes = ['https://www.googleapis.com/auth/calendar','https://www.googleapis.com/auth/calendar.events'];
+        $client = \core\oauth2\api::get_user_oauth_client($issuer, $href, $scopes);
+        
+        if (!$client->is_logged_in()) {
+            redirect($client->get_login_url());
+        }
+
+        $service = new \local_googlecalendar\rest($client);
+
+        $params = ['end' => $dateend,'start' => $datestart,'attendees' => $attendees];
+
+        $service->call('create', $params);
+        
     }
     return $data;
 }

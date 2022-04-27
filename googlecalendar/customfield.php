@@ -33,4 +33,3 @@ $context = context_course::instance($COURSE->id);
 echo $output->header(),
      $output->heading(get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0)[4]->email),
      $output->footer();
-echo 'Hola';
