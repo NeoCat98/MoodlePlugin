@@ -132,13 +132,9 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
             'calendarId' => "primary",
             'summary' => "Ejemplo"
         ];
-
-        try{
-            $service->call('create', $params);
-        } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
-        }
         
+        $pet = $service->call('create', $params);
+        print_object($pet);
     }
     return $data;
 }

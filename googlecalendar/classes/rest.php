@@ -37,13 +37,12 @@ class rest extends \core\oauth2\rest {
     function get_api_functions() {                                                                                           
         return [                                                                                                                    
             'create' => [                                                                                                           
-                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events',                                                          
+                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/primary/events',                                                          
                 'method' => 'post',                                                                                                 
                 'args' => [                                                                                                         
                     'end.date' => PARAM_RAW,
                     'start.date' => PARAM_RAW,
                     'attendees' =>  PARAM_RAW ,
-                    'calendarId' => PARAM_RAW,
                     'summary' => PARAM_RAW
                                                                                                       
                 ],                                                                                                                  
