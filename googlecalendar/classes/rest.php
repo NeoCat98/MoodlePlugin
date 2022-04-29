@@ -22,7 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_googlecalendar;  
+namespace local_googlecalendar; 
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -34,15 +34,18 @@ class rest extends \core\oauth2\rest {
      * @return array Example:                                                                                                       
      *  [ 'listFiles' => [ 'method' => 'get', 'endpoint' => 'http://...', 'args' => [ 'folder' => PARAM_STRING ] ] ]                
      */                                                                                                                             
-    public function get_api_functions() {                                                                                           
+    function get_api_functions() {                                                                                           
         return [                                                                                                                    
             'create' => [                                                                                                           
-                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/primary/events',                                                          
+                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events',                                                          
                 'method' => 'post',                                                                                                 
                 'args' => [                                                                                                         
-                    'end' => PARAM_RAW ,
-                    'start' => PARAM_RAW,
-                    'attendees' =>  PARAM_RAW                                                                                   
+                    'end.date' => PARAM_RAW,
+                    'start.date' => PARAM_RAW,
+                    'attendees' =>  PARAM_RAW ,
+                    'calendarId' => PARAM_RAW,
+                    'summary' => PARAM_RAW
+                                                                                                      
                 ],                                                                                                                  
                 'response' => 'json'                                                                                                
             ]                                                                                                                   

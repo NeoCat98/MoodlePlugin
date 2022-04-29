@@ -19,14 +19,13 @@
  *
  * @package     local_googlecalendar
  * @copyright   2022 Javier Mejia
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @licAAense     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 
 defined('MOODLE_INTERNAL') || die();
 
 
-
+use local_googlecalendar\rest;
 
 /**
  * @param moodleform $formwrapper The moodle quickforms wrapper object.
@@ -73,6 +72,7 @@ function local_googlecalendar_coursemodule_standard_elements($formwrapper, $mfor
 function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
     GLOBAL $DB;
     
+
     $newobj = new stdClass();
     $newobj->course = $data->course;
     $newobj->assign = $data->coursemodule;
@@ -81,11 +81,13 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
     $context = context_course::instance($data->course);
     
     $datestart = new stdClass();
+    $ddstart = strtotime($data->allowsubmissionsfromdate['day'] .'/'. $data->allowsubmissionsfromdate['month'] .'/'. $data->allowsubmissionsfromdate['year'] .' '. $data->allowsubmissionsfromdate['hour'] . ':'.$data->allowsubmissionsfromdate['minute'] . ':00');
     $datestart->dateTime = date('d/m/Y h:i:s',strtotime($data->allowsubmissionsfromdate['day'] .'/'. $data->allowsubmissionsfromdate['month'] .'/'. $data->allowsubmissionsfromdate['year'] .' '. $data->allowsubmissionsfromdate['hour'] . ':'.$data->allowsubmissionsfromdate['minute'] . ':00'));
     $datestartCheck = $data->allowsubmissionsfromdate['enabled'];
 
 
     $dateend = new stdClass();
+    $dddend = strtotime($data->duedate['day'] .'/'. $data->duedate['month'] .'/'. $data->duedate['year'] .' '. $data->duedate['hour'] . ':'.$data->duedate['minute'] . ':00');
     $dateend->dateTime = date('d/m/Y h:i:s',strtotime($data->duedate['day'] .'/'. $data->duedate['month'] .'/'. $data->duedate['year'] .' '. $data->duedate['hour'] . ':'.$data->duedate['minute'] . ':00'));
     $dateendCheck = $data->duedate['enabled'];
     
@@ -107,23 +109,35 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
             $email->email = $d->email;
             array_push($attendees,$email);
         }
-
         // Get an issuer from the id.
         $issuer = \core\oauth2\api::get_issuer(1);
         // Get an OAuth client from the issuer.
-        $href = new moodle_url('/admin/oauth2callback.php', ['id' => $data->coursemodule]);
-        $scopes = ['https://www.googleapis.com/auth/calendar','https://www.googleapis.com/auth/calendar.events'];
-        $client = \core\oauth2\api::get_user_oauth_client($issuer, $href, $scopes);
+        $returnurl  = new moodle_url('/course/view.php');
+        $returnurl->param('id',$data->course);
+        $returnurl->param('sesskey',sesskey());
+        $scopes = 'https://www.googleapis.com/auth/calendar';
+        
+        $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
+
         
         if (!$client->is_logged_in()) {
             redirect($client->get_login_url());
         }
 
-        $service = new \local_googlecalendar\rest($client);
+        $service = new rest($client);
+        $params = [
+            'end.date' => $dateend->dateTime,
+            'start.date' => $datestart->dateTime,
+            'attendees' => $attendees,
+            'calendarId' => "primary",
+            'summary' => "Ejemplo"
+        ];
 
-        $params = ['end' => $dateend,'start' => $datestart,'attendees' => $attendees];
-
-        $service->call('create', $params);
+        try{
+            $service->call('create', $params);
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
         
     }
     return $data;
