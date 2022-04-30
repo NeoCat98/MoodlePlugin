@@ -23,41 +23,32 @@
  */
 
 global $CFG;
-use local_googlecalendar\rest;
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 global $COURSE;
 $output = $PAGE->get_renderer('core_customfield');
-
-$attendees = [
-    'email' => '00004817@uca.edu.sv',
-    'email' => '00076017@uca.edu.sv'
-];
-$dateend->dateTime = date('d/m/Y h:i:s',strtotime('2022-04-28T09:00:00-07:00'));
-$datestart->dateTime = date('d/m/Y h:i:s',strtotime('2022-04-27T09:00:00-07:00'));
+global $SESSION;
        
 $issuer = \core\oauth2\api::get_issuer(1);
 $returnurl  = new moodle_url('/local/googlecalendar/customfield.php');
-$returnurl->param('id',$data->course);
 $returnurl->param('sesskey',sesskey());
 $scopes = 'https://www.googleapis.com/auth/calendar';       
 $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
 if (!$client->is_logged_in()) {
     redirect($client->get_login_url());
+    
+}else{
+    //crear un nuevo calendario
+    $service = new \local_googlecalendar\rest($client);
+    $SESSION->summary = " ";
+    $params = ['summary' => $SESSION->summary];       
+    $SESSION->myvar = $params;
+    $response = $service->call('create', $SESSION->myvar);
+    print_object($response);
+
 }
 
-$service = new rest($client);
-$params = [
-    'end.date' => $dateend->dateTime,
-    'start.date' => $datestart->dateTime,
-    'attendees' => array(
-        
-    ),
-    'summary' => "Ejemplo"
-];
-$pet = $service->call('create', $params);
-$context = context_course::instance($COURSE->id);
 
 echo $output->header(),
-     $output->heading($pet),
+     $output->heading($response),
      $output->footer();

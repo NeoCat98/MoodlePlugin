@@ -22,7 +22,16 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ 
 namespace local_googlecalendar; 
+
+
+use curl;
+use coding_exception;
+use stdClass;
+
+
+require_once($CFG->libdir . '/filelib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -36,20 +45,35 @@ class rest extends \core\oauth2\rest {
      */                                                                                                                             
     function get_api_functions() {                                                                                           
         return [                                                                                                                    
-            'create' => [                                                                                                           
+            'insert' => [                                                                                                           
                 'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/primary/events',                                                          
                 'method' => 'post',                                                                                                 
-                'args' => [                                                                                                         
-                    'end.date' => PARAM_RAW,
-                    'start.date' => PARAM_RAW,
-                    'attendees' =>  PARAM_RAW ,
-                    'summary' => PARAM_RAW
+                'args' => [                                                                                              
+                    'end' => PARAM_RAW,
+                    'start'  => PARAM_RAW,  
+                    'attendees' =>  PARAM_RAW 
                                                                                                       
                 ],                                                                                                                  
                 'response' => 'json'                                                                                                
+            ],
+            'create' => [                                                                                                           
+                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars',                                                          
+                'method' => 'post',                                                                                                 
+                'args' => [                                                                                              
+                    'summary' => PARAM_RAW,                                                            
+                ],                                                                                                                  
+                'response' => 'xml'                                                                                                
+            ] ,
+            'get' => [                                                                                                           
+                'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars/primary',                                                          
+                'method' => 'get',                                                                                                 
+                'args' => [                                                                                              
+                    'summary' => PARAM_RAW,
+                                                                                                      
+                ],                                                                                                                  
+                'response' => 'xml'                                                                                                
             ]                                                                                                                   
         ];                                                                                                                          
     }
-    
     
 }

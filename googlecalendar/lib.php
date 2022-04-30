@@ -105,9 +105,9 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
         $submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
         $attendees = [];
         foreach ($submissioncandidates as $d){
-            $email = new stdClass();
-            $email->email = $d->email;
-            array_push($attendees,$email);
+            $attendee = new stdClass();
+            $attendee->email = $d->email;
+            array_push($attendees,$attendee);
         }
         // Get an issuer from the id.
         $issuer = \core\oauth2\api::get_issuer(1);
@@ -115,7 +115,7 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
         $returnurl  = new moodle_url('/course/view.php');
         $returnurl->param('id',$data->course);
         $returnurl->param('sesskey',sesskey());
-        $scopes = 'https://www.googleapis.com/auth/calendar';
+        $scopes = 'https://www.googleapis.com/auth/calendar.events';
         
         $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
 
@@ -126,11 +126,9 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
 
         $service = new rest($client);
         $params = [
-            'end.date' => $dateend->dateTime,
-            'start.date' => $datestart->dateTime,
-            'attendees' => $attendees,
-            'calendarId' => "primary",
-            'summary' => "Ejemplo"
+            'summar' => $dateend,
+            'start' => $datestart,
+            'attendees' => $attendees
         ];
         
         $pet = $service->call('create', $params);
