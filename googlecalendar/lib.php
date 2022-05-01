@@ -126,13 +126,12 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
 
         $service = new rest($client);
         $params = [
-            'summar' => $dateend,
+            'end' => $dateend,
             'start' => $datestart,
             'attendees' => $attendees
         ];
         
-        $pet = $service->call('create', $params);
-        print_object($pet);
+        $service->call('insert',[] ,json_encode($params));
     }
     return $data;
 }

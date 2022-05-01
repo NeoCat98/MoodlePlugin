@@ -32,7 +32,18 @@ global $SESSION;
 $issuer = \core\oauth2\api::get_issuer(1);
 $returnurl  = new moodle_url('/local/googlecalendar/customfield.php');
 $returnurl->param('sesskey',sesskey());
-$scopes = 'https://www.googleapis.com/auth/calendar';       
+$scopes = 'https://www.googleapis.com/auth/calendar';  
+$datestart = new stdClass();
+$dateend = new stdClass(); 
+$attendee = new stdClass(); 
+$attendees = [];
+$attendee->email = '00184217@uca.edu.sv';
+$attendee2->email = '00004817@uca.edu.sv';
+$summary = 'Peche es feo';
+array_push($attendees,$attendee);
+array_push($attendees,$attendee2);
+$dateend->dateTime = '2022-04-30T17:06:02.000Z';
+$datestart->dateTime = '2022-04-29T17:06:02.000Z';
 $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
 if (!$client->is_logged_in()) {
     redirect($client->get_login_url());
@@ -40,11 +51,14 @@ if (!$client->is_logged_in()) {
 }else{
     //crear un nuevo calendario
     $service = new \local_googlecalendar\rest($client);
-    $SESSION->summary = " ";
-    $params = ['summary' => $SESSION->summary];       
+    $params = [
+        'end' => $dateend,
+        'summary' => $summary,
+        'start' => $datestart,
+        'attendees' => $attendees
+    ];      
     $SESSION->myvar = $params;
-    $response = $service->call('create', $SESSION->myvar);
-    print_object($response);
+    $response = $service->call('insert',[] ,json_encode($SESSION->myvar));
 
 }
 

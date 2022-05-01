@@ -51,10 +51,11 @@ class rest extends \core\oauth2\rest {
                 'args' => [                                                                                              
                     'end' => PARAM_RAW,
                     'start'  => PARAM_RAW,  
-                    'attendees' =>  PARAM_RAW 
+                    'attendees' =>  PARAM_RAW,
+                    'summary' =>  PARAM_RAW 
                                                                                                       
                 ],                                                                                                                  
-                'response' => 'json'                                                                                                
+                'response' => 'xml'                                                                                                
             ],
             'create' => [                                                                                                           
                 'endpoint' => 'https://www.googleapis.com/calendar/v3/calendars',                                                          
