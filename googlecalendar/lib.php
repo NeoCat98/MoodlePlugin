@@ -25,8 +25,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-use local_googlecalendar\rest;
-
 /**
  * @param moodleform $formwrapper The moodle quickforms wrapper object.
  * @param MoodleQuickForm $mform The actual form object (required to modify the form).
@@ -70,69 +68,112 @@ function local_googlecalendar_coursemodule_standard_elements($formwrapper, $mfor
  * @return $data
  */
 function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
-    GLOBAL $DB;
-    
+    GLOBAL $DB,$SESSION;
+    $modulename = $data->modulename;
 
-    $newobj = new stdClass();
-    $newobj->course = $data->course;
-    $newobj->assign = $data->coursemodule;
-    $user = $DB->get_record_sql('SELECT id FROM {googlecalendar} WHERE course = ? AND assign = ?;',[$data->course,$data->coursemodule]);
-    $newobj->checkbox = $data->checkboxGoogleCalendar;
-    $context = context_course::instance($data->course);
-    
-    $datestart = new stdClass();
-    $ddstart = strtotime($data->allowsubmissionsfromdate['day'] .'/'. $data->allowsubmissionsfromdate['month'] .'/'. $data->allowsubmissionsfromdate['year'] .' '. $data->allowsubmissionsfromdate['hour'] . ':'.$data->allowsubmissionsfromdate['minute'] . ':00');
-    $datestart->dateTime = date('d/m/Y h:i:s',strtotime($data->allowsubmissionsfromdate['day'] .'/'. $data->allowsubmissionsfromdate['month'] .'/'. $data->allowsubmissionsfromdate['year'] .' '. $data->allowsubmissionsfromdate['hour'] . ':'.$data->allowsubmissionsfromdate['minute'] . ':00'));
-    $datestartCheck = $data->allowsubmissionsfromdate['enabled'];
-
-
-    $dateend = new stdClass();
-    $dddend = strtotime($data->duedate['day'] .'/'. $data->duedate['month'] .'/'. $data->duedate['year'] .' '. $data->duedate['hour'] . ':'.$data->duedate['minute'] . ':00');
-    $dateend->dateTime = date('d/m/Y h:i:s',strtotime($data->duedate['day'] .'/'. $data->duedate['month'] .'/'. $data->duedate['year'] .' '. $data->duedate['hour'] . ':'.$data->duedate['minute'] . ':00'));
-    $dateendCheck = $data->duedate['enabled'];
-    
-    $dateend = new stdClass();
-    if(empty($user)){  
-        $DB->insert_record('googlecalendar',$newobj);
-    }
-    else{
-        $newobj->id = $user->id;
-        $DB->update_record('googlecalendar', $newobj);
-    }
-
-    if($data->checkboxGoogleCalendar == 1){
-        //realizar la API
-        $submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
-        $attendees = [];
-        foreach ($submissioncandidates as $d){
-            $attendee = new stdClass();
-            $attendee->email = $d->email;
-            array_push($attendees,$attendee);
+    if($modulename == 'assign'){
+        $context = context_course::instance($data->course);
+        //Find if the assign is already created
+        $user = $DB->get_record_sql('SELECT id FROM {googlecalendar} WHERE course = ? AND assign = ?;',[$data->course,$data->coursemodule]);
+        //Define Objects
+        $newobj = new stdClass();
+        $dateend = new stdClass();
+        $datestart = new stdClass();
+        //Obtain the course id
+        $newobj->course = $data->course;
+        //Obtain the assign id
+        $newobj->assign = $data->coursemodule;
+        //Obtain the value of the checkbox
+        $newobj->checkbox = $data->checkboxGoogleCalendar;
+        //Obtain the date when the activity start
+        $m = $data->allowsubmissionsfromdate['month'];
+        if($m < 10){
+            $m = '0'.$m;
         }
-        // Get an issuer from the id.
-        $issuer = \core\oauth2\api::get_issuer(1);
-        // Get an OAuth client from the issuer.
-        $returnurl  = new moodle_url('/course/view.php');
-        $returnurl->param('id',$data->course);
-        $returnurl->param('sesskey',sesskey());
-        $scopes = 'https://www.googleapis.com/auth/calendar.events';
-        
-        $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
-
-        
-        if (!$client->is_logged_in()) {
-            redirect($client->get_login_url());
+        $day = $data->allowsubmissionsfromdate['day'];
+        if($day < 10){
+            $day = '0'.$m;
         }
-
-        $service = new rest($client);
-        $params = [
-            'end' => $dateend,
-            'start' => $datestart,
-            'attendees' => $attendees
-        ];
-        
-        $service->call('insert',[] ,json_encode($params));
-    }
+        $h = $data->allowsubmissionsfromdate['hour'];
+        if($h < 10){
+            $h = '0'.$m;
+        }
+        $minute = $data->allowsubmissionsfromdate['minute'];
+        if($minute < 10){
+            $minute = '0'.$m;
+        }
+        $datestart->dateTime = $data->allowsubmissionsfromdate['year'] .'-'. $m .'-'. $day .'T'. $h . ':'.$minute . ':00.000Z';
+        //Obtain if the date when the activity start is enabled
+        //$datestartCheck = $data->allowsubmissionsfromdate['enabled'];
+        //Obtain the name of the assign
+        $summary = $data->name;
+        //Obtain the date when the activity end
+        $m = $data->duedate['month'];
+        if($m < 10){
+            $m = '0'.$m;
+        }
+        $day = $data->duedate['day'];
+        if($day < 10){
+            $day = '0'.$m;
+        }
+        $h = $data->duedate['hour'];
+        if($h < 10){
+            $h = '0'.$m;
+        }
+        $minute = $data->duedate['minute'];
+        if($minute < 10){
+            $minute = '0'.$m;
+        }
+        $dateend->dateTime = $data->duedate['year'] .'-'. $m .'-'. $day .'T'. $h. ':'.$minute . ':00.000Z';
+        $newobj->end = $dateend->dateTime;
+        $newobj->start = $datestart->dateTime;
+        //Obtain if the date when the activity end is enabled
+        //$dateendCheck = $data->duedate['enabled'];
+        //If the assign is already created just update, in other case insert the new assign
+        if(empty($user)){  
+            $DB->insert_record('googlecalendar',$newobj);
+        }
+        else{
+            $newobj->id = $user->id;
+            $DB->update_record('googlecalendar', $newobj);
+        }
+        //Check if the app need to send reminders 
+        if($newobj->checkbox == 1){
+            //Get all the users in the course
+            $submissioncandidates = get_enrolled_users($context,'', 0, 'u.*', '', 0,0);
+            //Save each of the users email in array attendees 
+            $attendees = [];
+            foreach ($submissioncandidates as $d){
+                $attendee = new stdClass();
+                $attendee->email = $d->email;
+                array_push($attendees,$attendee);
+            } 
+            // Get an issuer from the id
+            $issuer = \core\oauth2\api::get_issuer(1);
+            // Put in the returnurl the course id and sesskey
+            $params = array('id' => $data->course, 'sesskey' => sesskey());
+            // Get an OAuth client from the issuer
+            $returnurl  = new moodle_url('/course/view.php',$params);
+            // Add the necesaries scopes for the API
+            $scopes = 'https://www.googleapis.com/auth/calendar';
+            $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
+            // Check the google session
+            if (!$client->is_logged_in()) {
+                redirect($client->get_login_url());
+            }
+            else{
+                $service = new \local_googlecalendar\rest($client);
+                $params = [
+                    'end' => $dateend,
+                    'summary' => $summary,
+                    'start' => $datestart,
+                    'attendees' => $attendees
+                ];      
+                $SESSION->myvar = $params;
+                $service->call('insert',[] ,json_encode($SESSION->myvar));
+            }
+        }  
+    } 
     return $data;
 }
 

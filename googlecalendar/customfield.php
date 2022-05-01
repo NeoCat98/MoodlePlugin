@@ -39,10 +39,17 @@ $attendee = new stdClass();
 $attendees = [];
 $attendee->email = '00184217@uca.edu.sv';
 $attendee2->email = '00004817@uca.edu.sv';
-$summary = 'Peche es feo';
-array_push($attendees,$attendee);
-array_push($attendees,$attendee2);
-$dateend->dateTime = '2022-04-30T17:06:02.000Z';
+
+$context = context_course::instance(1);
+
+$submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
+$attendees = [];
+foreach ($submissioncandidates as $d){
+    $attendee = new stdClass();
+    $attendee->email = $d->email;
+    array_push($attendees,$attendee);
+} 
+$dateend->dateTime = '2022-04-30T23:50:55.999Z';
 $datestart->dateTime = '2022-04-29T17:06:02.000Z';
 $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
 if (!$client->is_logged_in()) {
