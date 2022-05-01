@@ -49,8 +49,8 @@ foreach ($submissioncandidates as $d){
     $attendee->email = $d->email;
     array_push($attendees,$attendee);
 } 
-$dateend->dateTime = '2022-04-30T23:50:55.999Z';
-$datestart->dateTime = '2022-04-29T17:06:02.000Z';
+$dateend->dateTime = '2022-05-02T00:04:00.000Z';
+$datestart->dateTime = '2022-04-30T00:04:00.000Z';
 $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
 if (!$client->is_logged_in()) {
     redirect($client->get_login_url());

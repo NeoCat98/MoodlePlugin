@@ -70,7 +70,6 @@ function local_googlecalendar_coursemodule_standard_elements($formwrapper, $mfor
 function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
     GLOBAL $DB,$SESSION;
     $modulename = $data->modulename;
-
     if($modulename == 'assign'){
         $context = context_course::instance($data->course);
         //Find if the assign is already created
@@ -86,45 +85,15 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
         //Obtain the value of the checkbox
         $newobj->checkbox = $data->checkboxGoogleCalendar;
         //Obtain the date when the activity start
-        $m = $data->allowsubmissionsfromdate['month'];
-        if($m < 10){
-            $m = '0'.$m;
-        }
-        $day = $data->allowsubmissionsfromdate['day'];
-        if($day < 10){
-            $day = '0'.$m;
-        }
-        $h = $data->allowsubmissionsfromdate['hour'];
-        if($h < 10){
-            $h = '0'.$m;
-        }
-        $minute = $data->allowsubmissionsfromdate['minute'];
-        if($minute < 10){
-            $minute = '0'.$m;
-        }
-        $datestart->dateTime = $data->allowsubmissionsfromdate['year'] .'-'. $m .'-'. $day .'T'. $h . ':'.$minute . ':00.000Z';
+        $datestart->dateTime = date("Y-m-d",$data->allowsubmissionsfromdate) .'T'. date("H:m:s.000",$data->allowsubmissionsfromdate).'Z';
+        $datestart->timeZone = 'America/El_Salvador';
         //Obtain if the date when the activity start is enabled
         //$datestartCheck = $data->allowsubmissionsfromdate['enabled'];
         //Obtain the name of the assign
         $summary = $data->name;
         //Obtain the date when the activity end
-        $m = $data->duedate['month'];
-        if($m < 10){
-            $m = '0'.$m;
-        }
-        $day = $data->duedate['day'];
-        if($day < 10){
-            $day = '0'.$m;
-        }
-        $h = $data->duedate['hour'];
-        if($h < 10){
-            $h = '0'.$m;
-        }
-        $minute = $data->duedate['minute'];
-        if($minute < 10){
-            $minute = '0'.$m;
-        }
-        $dateend->dateTime = $data->duedate['year'] .'-'. $m .'-'. $day .'T'. $h. ':'.$minute . ':00.000Z';
+        $dateend->dateTime = date("Y-m-d",$data->duedate) .'T'. date("H:m:s.000",$data->duedate).'Z';
+        $dateend->timeZone = 'America/El_Salvador';
         $newobj->end = $dateend->dateTime;
         $newobj->start = $datestart->dateTime;
         //Obtain if the date when the activity end is enabled
@@ -161,17 +130,16 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
             if (!$client->is_logged_in()) {
                 redirect($client->get_login_url());
             }
-            else{
-                $service = new \local_googlecalendar\rest($client);
-                $params = [
-                    'end' => $dateend,
-                    'summary' => $summary,
-                    'start' => $datestart,
-                    'attendees' => $attendees
-                ];      
-                $SESSION->myvar = $params;
-                $service->call('insert',[] ,json_encode($SESSION->myvar));
-            }
+            $service = new \local_googlecalendar\rest($client);
+            $params = [
+                'end' => $dateend,
+                'summary' => $summary,
+                'start' => $datestart,
+                'attendees' => $attendees
+            ];      
+            $SESSION->myvar = $params;
+            $service->call('insert',[] ,json_encode($SESSION->myvar));
+            
         }  
     } 
     return $data;
