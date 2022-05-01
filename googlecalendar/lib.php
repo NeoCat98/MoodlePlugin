@@ -24,7 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-
 /**
  * @param moodleform $formwrapper The moodle quickforms wrapper object.
  * @param MoodleQuickForm $mform The actual form object (required to modify the form).
@@ -86,18 +85,13 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
         $newobj->checkbox = $data->checkboxGoogleCalendar;
         //Obtain the date when the activity start
         $datestart->dateTime = date("Y-m-d",$data->allowsubmissionsfromdate) .'T'. date("H:m:s.000",$data->allowsubmissionsfromdate).'Z';
-        $datestart->timeZone = 'America/El_Salvador';
-        //Obtain if the date when the activity start is enabled
-        //$datestartCheck = $data->allowsubmissionsfromdate['enabled'];
         //Obtain the name of the assign
         $summary = $data->name;
         //Obtain the date when the activity end
         $dateend->dateTime = date("Y-m-d",$data->duedate) .'T'. date("H:m:s.000",$data->duedate).'Z';
-        $dateend->timeZone = 'America/El_Salvador';
+        //Add variables of dateTime to add them in the database
         $newobj->end = $dateend->dateTime;
         $newobj->start = $datestart->dateTime;
-        //Obtain if the date when the activity end is enabled
-        //$dateendCheck = $data->duedate['enabled'];
         //If the assign is already created just update, in other case insert the new assign
         if(empty($user)){  
             $DB->insert_record('googlecalendar',$newobj);
@@ -106,40 +100,43 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
             $newobj->id = $user->id;
             $DB->update_record('googlecalendar', $newobj);
         }
-        //Check if the app need to send reminders 
-        if($newobj->checkbox == 1){
-            //Get all the users in the course
-            $submissioncandidates = get_enrolled_users($context,'', 0, 'u.*', '', 0,0);
-            //Save each of the users email in array attendees 
+        //Check if the app need to send reminders and It's enable start and end date
+        if($newobj->checkbox == 1 and $newobj->end != '1970-01-01T01:01:00.000Z' and $newobj->start != '1970-01-01T01:01:00.000Z'){
+            //Get all users in the course
+            $submissioncandidates = get_enrolled_users($context, $withcapability = '', $groupid = 0, $userfields = 'u.*', $orderby = '', $limitfrom = 0, $limitnum = 0);
+            //Save each users email in array attendees 
             $attendees = [];
             foreach ($submissioncandidates as $d){
                 $attendee = new stdClass();
                 $attendee->email = $d->email;
                 array_push($attendees,$attendee);
             } 
+            // Call API
             // Get an issuer from the id
             $issuer = \core\oauth2\api::get_issuer(1);
             // Put in the returnurl the course id and sesskey
-            $params = array('id' => $data->course, 'sesskey' => sesskey());
+            $sesskey = sesskey();   
+            $params = array('id' => $data->course, 'sesskey' => $sesskey);
             // Get an OAuth client from the issuer
             $returnurl  = new moodle_url('/course/view.php',$params);
-            // Add the necesaries scopes for the API
+            // Add all scopes for the API
             $scopes = 'https://www.googleapis.com/auth/calendar';
             $client = \core\oauth2\api::get_user_oauth_client($issuer, $returnurl , $scopes);
             // Check the google session
             if (!$client->is_logged_in()) {
                 redirect($client->get_login_url());
             }
-            $service = new \local_googlecalendar\rest($client);
-            $params = [
-                'end' => $dateend,
-                'summary' => $summary,
-                'start' => $datestart,
-                'attendees' => $attendees
-            ];      
-            $SESSION->myvar = $params;
-            $service->call('insert',[] ,json_encode($SESSION->myvar));
-            
+            else{   
+                $service = new \local_googlecalendar\rest($client);
+                $params = [
+                    'end' => $dateend,
+                    'summary' => $summary,
+                    'start' => $datestart,
+                    'attendees' => $attendees
+                ];      
+                $SESSION->myvar = $params;
+                $service->call('insert',[],json_encode($SESSION->myvar));
+            }
         }  
     } 
     return $data;
@@ -155,6 +152,6 @@ function local_googlecalendar_coursemodule_edit_post_actions($data, $course) {
  */
 function local_googlecalendar_coursemodule_validation($fromform, $fields) {
     if (get_class($fromform) == 'mod_assign_mod_form') {
-        \core\notification::add($fields['examplefield'], \core\notification::INFO);
+       // \core\notification::add($fields[1], \core\notification::INFO);
     }
 }
